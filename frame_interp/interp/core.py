@@ -137,6 +137,9 @@ def _block_match(
         for dy in range(-search, search + 1)
         for dx in range(-search, search + 1)
     ]
+    # 同代价时零位移优先（文档承诺）：按位移幅度升序枚举，argmin 取首个最小值。
+    # 否则纯色/低纹理区域所有候选完全同价，会随机选中最大负位移并污染整场。
+    shifts.sort(key=lambda s: (s[0] * s[0] + s[1] * s[1], s[0], s[1]))
     left_all = np.arange(w)
     col_off = np.arange(block)
     base_dx = (
@@ -299,12 +302,20 @@ def _color_components(rgb: np.ndarray, thresh: float = 0.12) -> np.ndarray:
 
 
 def _fill_flow_by_region(
-    flow: np.ndarray, reliable: np.ndarray, labels: np.ndarray
+    flow: np.ndarray, reliable: np.ndarray, labels: np.ndarray,
+    max_area: int = 4096,
 ) -> np.ndarray:
-    """在每个颜色连通域内，用可靠像素的主导（中位）运动填充不可靠像素。"""
+    """在每个颜色连通域内，用可靠像素的主导（中位）运动填充不可靠像素。
+
+    只补 `~reliable` 的内部像素，绝不覆盖已可靠的运动。区域面积超过
+    max_area 时跳过：大面积区域（如单色背景延伸超出搜索窗）内部本来就可
+    多解，按区域统一运动会把邻近物体的运动错误扩散过来。
+    """
     out = flow.copy()
     for lab in np.unique(labels):
         region = labels == lab
+        if int(region.sum()) > max_area:
+            continue
         rel = region & reliable
         if not np.any(rel):
             continue

@@ -4,24 +4,24 @@
       "metrics_per_t": [
         {
           "pixel": {
-            "mae_0_255": 2.192298418209876,
-            "psnr_db": 23.016069543370286,
-            "mse": 0.004993361928104575,
-            "max_err": 215.0
+            "mae_0_255": 2.321698977623457,
+            "psnr_db": 22.839825917339503,
+            "mse": 0.005200168404780213,
+            "max_err": 229.0
           },
           "ghosting": {
-            "edge_mae_0_255": 2.8883755684991623,
-            "gradient_mismatch": 0.06849019445630859,
-            "double_edge_ratio": 0.16787680523418175,
+            "edge_mae_0_255": 2.8984115534987636,
+            "gradient_mismatch": 0.0694922982602113,
+            "double_edge_ratio": 0.1667597542487832,
             "edge_band_px": 12533
           },
           "holes": {
             "hole_ratio": 0.0,
             "recoverable_ratio": 0.0,
             "unrecoverable_inpaint_ratio": 0.0,
-            "collision_ratio": 0.061957465277777776,
-            "covered_ratio": 0.061957465277777776,
-            "mean_confidence": 0.9136555989583334,
+            "collision_ratio": 0.06470630787037036,
+            "covered_ratio": 0.06470630787037036,
+            "mean_confidence": 0.9069317853009259,
             "min_inpaint_confidence": 1.0,
             "max_inpaint_confidence": 1.0,
             "inpaint_region_mae_0_255": 0.0
@@ -30,24 +30,24 @@
         },
         {
           "pixel": {
-            "mae_0_255": 2.5361448688271606,
-            "psnr_db": 22.065423329380273,
-            "mse": 0.006215236616614693,
+            "mae_0_255": 2.6682339891975313,
+            "psnr_db": 21.884722134884512,
+            "mse": 0.006479295489982487,
             "max_err": 229.0
           },
           "ghosting": {
-            "edge_mae_0_255": 3.3305219171483618,
-            "gradient_mismatch": 0.06124746575663525,
-            "double_edge_ratio": 0.1649004495825305,
+            "edge_mae_0_255": 3.4726472382787406,
+            "gradient_mismatch": 0.06550845975487855,
+            "double_edge_ratio": 0.1640976236351959,
             "edge_band_px": 12456
           },
           "holes": {
-            "hole_ratio": 0.00043402777777777775,
-            "recoverable_ratio": 0.00043402777777777775,
+            "hole_ratio": 0.00047019675925925923,
+            "recoverable_ratio": 0.00047019675925925923,
             "unrecoverable_inpaint_ratio": 0.0,
-            "collision_ratio": 0.059968171296296294,
-            "covered_ratio": 0.059968171296296294,
-            "mean_confidence": 0.9078034577546297,
+            "collision_ratio": 0.06712962962962964,
+            "covered_ratio": 0.06712962962962964,
+            "mean_confidence": 0.8981101707175925,
             "min_inpaint_confidence": 1.0,
             "max_inpaint_confidence": 1.0,
             "inpaint_region_mae_0_255": 0.0
@@ -56,24 +56,24 @@
         },
         {
           "pixel": {
-            "mae_0_255": 2.483217592592593,
-            "psnr_db": 22.23300363560606,
-            "mse": 0.005979978691125446,
+            "mae_0_255": 2.701099537037037,
+            "psnr_db": 21.95480823178947,
+            "mse": 0.0063755723255775314,
             "max_err": 229.0
           },
           "ghosting": {
-            "edge_mae_0_255": 2.9017958001448223,
-            "gradient_mismatch": 0.06361149815885106,
-            "double_edge_ratio": 0.16316678735216028,
+            "edge_mae_0_255": 3.2533905382573014,
+            "gradient_mismatch": 0.07382991084878668,
+            "double_edge_ratio": 0.16091399147155847,
             "edge_band_px": 12429
           },
           "holes": {
             "hole_ratio": 0.0,
             "recoverable_ratio": 0.0,
             "unrecoverable_inpaint_ratio": 0.0,
-            "collision_ratio": 0.053638599537037035,
-            "covered_ratio": 0.053638599537037035,
-            "mean_confidence": 0.9170229311342593,
+            "collision_ratio": 0.057544849537037035,
+            "covered_ratio": 0.057544849537037035,
+            "mean_confidence": 0.9101200810185185,
             "min_inpaint_confidence": 1.0,
             "max_inpaint_confidence": 1.0,
             "inpaint_region_mae_0_255": 0.0
@@ -83,212 +83,212 @@
       ],
       "video": "output/moving_shapes/moving_shapes_play.mp4",
       "kernel_stats": {
-        "hit_ratio": 0.9995659722222222,
-        "collision_ratio": 0.0648509837962963,
-        "covered_ratio": 0.0648509837962963,
-        "hole_ratio": 0.00043402777777777775,
-        "recoverable_ratio": 0.00043402777777777775,
+        "hit_ratio": 0.9995298032407407,
+        "collision_ratio": 0.06351273148148148,
+        "covered_ratio": 0.06351273148148148,
+        "hole_ratio": 0.00047019675925925923,
+        "recoverable_ratio": 0.00047019675925925923,
         "unrecoverable_ratio": 0.0,
         "inpaint_ratio": 0.0,
         "inpaint_iters": 0,
-        "mean_confidence": 0.9077727141203703,
-        "consistency_ratio": 0.9363425925925926
+        "mean_confidence": 0.9010977285879629,
+        "consistency_ratio": 0.9212601273148148
       }
     },
     "crossing": {
       "metrics_per_t": [
         {
           "pixel": {
-            "mae_0_255": 1.9847366898148147,
-            "psnr_db": 26.989824533423835,
-            "mse": 0.0019999426710287115,
-            "max_err": 197.0
+            "mae_0_255": 2.0750626929012346,
+            "psnr_db": 26.78190743054489,
+            "mse": 0.0020980182272013143,
+            "max_err": 229.0
           },
           "ghosting": {
-            "edge_mae_0_255": 3.3890828886211053,
-            "gradient_mismatch": 0.14858499938337766,
+            "edge_mae_0_255": 3.5040384747805127,
+            "gradient_mismatch": 0.15225014436706572,
             "double_edge_ratio": 0.15562058874160786,
             "edge_band_px": 11618
           },
           "holes": {
-            "hole_ratio": 0.044379340277777776,
-            "recoverable_ratio": 0.044379340277777776,
-            "unrecoverable_inpaint_ratio": 0.0,
-            "collision_ratio": 0.04618778935185185,
-            "covered_ratio": 0.04618778935185185,
-            "mean_confidence": 0.94892578125,
-            "min_inpaint_confidence": 1.0,
-            "max_inpaint_confidence": 1.0,
-            "inpaint_region_mae_0_255": 0.0
+            "hole_ratio": 0.04488570601851852,
+            "recoverable_ratio": 0.04477719907407408,
+            "unrecoverable_inpaint_ratio": 0.00010850694444444444,
+            "collision_ratio": 0.04886429398148148,
+            "covered_ratio": 0.04886429398148148,
+            "mean_confidence": 0.9452506078490717,
+            "min_inpaint_confidence": 0.29626860371171493,
+            "max_inpaint_confidence": 0.29626860371171493,
+            "inpaint_region_mae_0_255": 46.99999999999999
           },
           "t": 0.25
         },
         {
           "pixel": {
-            "mae_0_255": 2.7274305555555554,
-            "psnr_db": 25.825848108253403,
-            "mse": 0.002614659796683137,
-            "max_err": 229.0
+            "mae_0_255": 2.915870949074074,
+            "psnr_db": 25.277025235491983,
+            "mse": 0.002966862890459984,
+            "max_err": 191.0
           },
           "ghosting": {
-            "edge_mae_0_255": 4.756073870726229,
-            "gradient_mismatch": 0.15703200460571584,
-            "double_edge_ratio": 0.160053240163048,
+            "edge_mae_0_255": 4.868643374095333,
+            "gradient_mismatch": 0.16327221456950333,
+            "double_edge_ratio": 0.160385991182098,
             "edge_band_px": 12021
           },
           "holes": {
-            "hole_ratio": 0.07353153935185185,
-            "recoverable_ratio": 0.055989583333333336,
+            "hole_ratio": 0.07454427083333333,
+            "recoverable_ratio": 0.05700231481481482,
             "unrecoverable_inpaint_ratio": 0.017541956018518517,
-            "collision_ratio": 0.038013599537037035,
-            "covered_ratio": 0.038013599537037035,
-            "mean_confidence": 0.9362655817759586,
+            "collision_ratio": 0.04000289351851852,
+            "covered_ratio": 0.04000289351851852,
+            "mean_confidence": 0.9336740742528106,
             "min_inpaint_confidence": 0.07809555605195043,
             "max_inpaint_confidence": 0.29626860371171493,
-            "inpaint_region_mae_0_255": 27.57525773195876
+            "inpaint_region_mae_0_255": 27.517525773195874
           },
           "t": 0.5
         },
         {
           "pixel": {
-            "mae_0_255": 3.4419970100308643,
-            "psnr_db": 21.492298662084835,
-            "mse": 0.007092022974010471,
+            "mae_0_255": 3.4676890432098766,
+            "psnr_db": 21.42089532281655,
+            "mse": 0.0072095883409040214,
             "max_err": 229.0
           },
           "ghosting": {
-            "edge_mae_0_255": 5.339490616162481,
-            "gradient_mismatch": 0.14022393034319447,
-            "double_edge_ratio": 0.15871111491987316,
+            "edge_mae_0_255": 5.165643071385722,
+            "gradient_mismatch": 0.14013613288123292,
+            "double_edge_ratio": 0.15674008055531752,
             "edge_band_px": 11669
           },
           "holes": {
-            "hole_ratio": 0.04495804398148148,
-            "recoverable_ratio": 0.03732638888888889,
-            "unrecoverable_inpaint_ratio": 0.007631655092592593,
-            "collision_ratio": 0.046296296296296294,
-            "covered_ratio": 0.046296296296296294,
-            "mean_confidence": 0.9452991238752156,
-            "min_inpaint_confidence": 0.1287578044100048,
+            "hole_ratio": 0.04503038194444445,
+            "recoverable_ratio": 0.03779658564814815,
+            "unrecoverable_inpaint_ratio": 0.007233796296296296,
+            "collision_ratio": 0.04806857638888889,
+            "covered_ratio": 0.04806857638888889,
+            "mean_confidence": 0.9429543536243677,
+            "min_inpaint_confidence": 0.15210937297747737,
             "max_inpaint_confidence": 0.29626860371171493,
-            "inpaint_region_mae_0_255": 51.40126382306477
+            "inpaint_region_mae_0_255": 39.54833333333333
           },
           "t": 0.75
         }
       ],
       "video": "output/crossing/crossing_play.mp4",
       "kernel_stats": {
-        "hit_ratio": 0.9265407986111112,
-        "collision_ratio": 0.03844762731481482,
-        "covered_ratio": 0.03844762731481482,
-        "hole_ratio": 0.0734592013888889,
-        "recoverable_ratio": 0.05591724537037037,
+        "hit_ratio": 0.9256727430555556,
+        "collision_ratio": 0.040364583333333336,
+        "covered_ratio": 0.040364583333333336,
+        "hole_ratio": 0.07432725694444445,
+        "recoverable_ratio": 0.05678530092592592,
         "unrecoverable_ratio": 0.017541956018518517,
         "inpaint_ratio": 0.017541956018518517,
         "inpaint_iters": 60,
-        "mean_confidence": 0.9356271992528106,
-        "consistency_ratio": 0.9857132523148148
+        "mean_confidence": 0.9331659000629957,
+        "consistency_ratio": 0.9823495370370371
       }
     },
     "exit_frame": {
       "metrics_per_t": [
         {
           "pixel": {
-            "mae_0_255": 4.829270351080248,
-            "psnr_db": 19.02272033922181,
-            "mse": 0.012523564765866406,
+            "mae_0_255": 2.523389274691358,
+            "psnr_db": 23.200563664080555,
+            "mse": 0.004785679756954827,
             "max_err": 242.0
           },
           "ghosting": {
-            "edge_mae_0_255": 5.358487273043177,
-            "gradient_mismatch": 0.10967782642343563,
-            "double_edge_ratio": 0.15750152028494482,
+            "edge_mae_0_255": 2.9482762574928327,
+            "gradient_mismatch": 0.11810680888534811,
+            "double_edge_ratio": 0.1621926852575797,
             "edge_band_px": 11511
           },
           "holes": {
-            "hole_ratio": 0.0032913773148148147,
-            "recoverable_ratio": 0.0028211805555555555,
-            "unrecoverable_inpaint_ratio": 0.00047019675925925923,
-            "collision_ratio": 0.1146556712962963,
-            "covered_ratio": 0.1146556712962963,
-            "mean_confidence": 0.8406594144910392,
-            "min_inpaint_confidence": 0.29626860371171493,
+            "hole_ratio": 0.008572048611111112,
+            "recoverable_ratio": 0.006655092592592593,
+            "unrecoverable_inpaint_ratio": 0.0019169560185185186,
+            "collision_ratio": 0.1206958912037037,
+            "covered_ratio": 0.1206958912037037,
+            "mean_confidence": 0.8321806820057057,
+            "min_inpaint_confidence": 0.21228573089942168,
             "max_inpaint_confidence": 0.29626860371171493,
-            "inpaint_region_mae_0_255": 17.15384615384615
+            "inpaint_region_mae_0_255": 27.081761006289305
           },
           "t": 0.25
         },
         {
           "pixel": {
-            "mae_0_255": 1.2573664158950617,
-            "psnr_db": 26.043193051387064,
-            "mse": 0.0024870281150768223,
+            "mae_0_255": 2.555447048611111,
+            "psnr_db": 23.262159638634778,
+            "mse": 0.004718283543900494,
             "max_err": 242.0
           },
           "ghosting": {
-            "edge_mae_0_255": 2.9166136111348306,
-            "gradient_mismatch": 0.11051347187908088,
-            "double_edge_ratio": 0.1625821876867902,
+            "edge_mae_0_255": 3.7620861583126977,
+            "gradient_mismatch": 0.12328866749221584,
+            "double_edge_ratio": 0.16300913670907693,
             "edge_band_px": 11711
           },
           "holes": {
-            "hole_ratio": 0.006980613425925926,
-            "recoverable_ratio": 0.006040219907407407,
-            "unrecoverable_inpaint_ratio": 0.0009403935185185185,
-            "collision_ratio": 0.11060474537037036,
-            "covered_ratio": 0.11060474537037036,
-            "mean_confidence": 0.8412528031340963,
-            "min_inpaint_confidence": 0.2507859587008262,
+            "hole_ratio": 0.021375868055555556,
+            "recoverable_ratio": 0.016927083333333332,
+            "unrecoverable_inpaint_ratio": 0.004448784722222222,
+            "collision_ratio": 0.11765769675925926,
+            "covered_ratio": 0.11765769675925926,
+            "mean_confidence": 0.831649242839521,
+            "min_inpaint_confidence": 0.21228573089942168,
             "max_inpaint_confidence": 0.29626860371171493,
-            "inpaint_region_mae_0_255": 32.34615384615384
+            "inpaint_region_mae_0_255": 38.97018970189702
           },
           "t": 0.5
         },
         {
           "pixel": {
-            "mae_0_255": 5.013069058641975,
-            "psnr_db": 18.886422287695712,
-            "mse": 0.012922834166346276,
+            "mae_0_255": 2.8003231095679015,
+            "psnr_db": 22.57160168791616,
+            "mse": 0.005531460700656443,
             "max_err": 242.0
           },
           "ghosting": {
-            "edge_mae_0_255": 6.20137623089983,
-            "gradient_mismatch": 0.11684826911574864,
-            "double_edge_ratio": 0.15806451612903225,
+            "edge_mae_0_255": 3.297782937181663,
+            "gradient_mismatch": 0.12777546294961176,
+            "double_edge_ratio": 0.16451612903225807,
             "edge_band_px": 11780
           },
           "holes": {
-            "hole_ratio": 0.005787037037037037,
-            "recoverable_ratio": 0.00437644675925926,
-            "unrecoverable_inpaint_ratio": 0.0014105902777777778,
-            "collision_ratio": 0.11187065972222222,
-            "covered_ratio": 0.11187065972222222,
-            "mean_confidence": 0.8444810204188795,
+            "hole_ratio": 0.014973958333333334,
+            "recoverable_ratio": 0.01099537037037037,
+            "unrecoverable_inpaint_ratio": 0.003978587962962963,
+            "collision_ratio": 0.12156394675925926,
+            "covered_ratio": 0.12156394675925926,
+            "mean_confidence": 0.8317907492527093,
             "min_inpaint_confidence": 0.21228573089942168,
             "max_inpaint_confidence": 0.29626860371171493,
-            "inpaint_region_mae_0_255": 23.52136752136752
+            "inpaint_region_mae_0_255": 21.887878787878787
           },
           "t": 0.75
         }
       ],
       "video": "output/exit_frame/exit_frame_play.mp4",
       "kernel_stats": {
-        "hit_ratio": 0.9925130208333334,
-        "collision_ratio": 0.10789207175925926,
-        "covered_ratio": 0.10789207175925926,
-        "hole_ratio": 0.007486979166666667,
-        "recoverable_ratio": 0.006908275462962963,
-        "unrecoverable_ratio": 0.0005787037037037037,
-        "inpaint_ratio": 0.0005787037037037037,
+        "hit_ratio": 0.9781901041666666,
+        "collision_ratio": 0.1062282986111111,
+        "covered_ratio": 0.1062282986111111,
+        "hole_ratio": 0.021809895833333332,
+        "recoverable_ratio": 0.01837384259259259,
+        "unrecoverable_ratio": 0.003436053240740741,
+        "inpaint_ratio": 0.003436053240740741,
         "inpaint_iters": 60,
-        "mean_confidence": 0.845945106252148,
-        "consistency_ratio": 0.8690682870370371
+        "mean_confidence": 0.8402647227035251,
+        "consistency_ratio": 0.8421947337962963
       }
     }
   },
   "scene_cut": {
     "rejected": true,
-    "error": "检测到场景切换，拒绝插值：一致像素比例 0.00 < 0.35；匹配残差 0.518 > 0.18；全局差异 0.353 且一致性仅 0.00"
+    "error": "检测到场景切换，拒绝插值：一致像素比例 0.10 < 0.35；匹配残差 0.207 > 0.18；全局差异 0.353 且一致性仅 0.10"
   },
-  "naive_blend_diff_mean_0_255": 6.982277199074074
+  "naive_blend_diff_mean_0_255": 6.929723668981482
 }

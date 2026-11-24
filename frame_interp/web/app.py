@@ -25,19 +25,29 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from interp import SceneCutError, interpolate_frame  # noqa: E402
+from interp.core import to_float_rgb  # noqa: E402
+from interp.fusion import METHOD_DESCRIPTIONS, run_method  # noqa: E402
+from interp.fusion_scenes import all_fusion_scenes  # noqa: E402
+from interp.fusion_viz import all_layers as fusion_layers  # noqa: E402
 from interp.sequences import all_sequences, scene_cut  # noqa: E402
 from interp.viz import all_layers  # noqa: E402
 
 HOST = "127.0.0.1"
 PORT = 8000
+METHOD_ORDER = ["warp_blend", "layered", "backward", "joint", "vis_switch"]
 
 # 进程级缓存：序列帧只构建一次；双向流按 (序列) 缓存，t 变化时复用同一运动估计，
 # 保证滑块拖动时“运动分析”固定、只改变时间投影位置——真正由内核对 t 做出响应。
 _SEQ_CACHE: dict[str, list] = {}
+_MASK_CACHE: dict[str, list] = {}
+_FRAME_META: dict[str, dict] = {}
 _FLOW_CACHE: dict[str, object] = {}
 # 同一次 (序列, t) 的内核产物缓存，元数据与各分层端点共享，避免重复合成。
 _RESULT_CACHE: dict[tuple, dict] = {}
 _RESULT_CACHE_MAX = 8
+# 融合原型缓存：(场景, 方法, t) -> 产物
+_FUSION_CACHE: dict[tuple, dict] = {}
+_FUSION_CACHE_MAX = 24
 
 
 def _load_sequences():
@@ -46,8 +56,14 @@ def _load_sequences():
     seqs, cut = all_sequences(h=144, w=192, steps=5)
     for frames, meta in seqs:
         _SEQ_CACHE[meta["name"]] = frames
+        _FRAME_META[meta["name"]] = {"family": "motion", **meta}
     cut_frames, cut_meta = scene_cut(144, 192)
     _SEQ_CACHE[cut_meta["name"]] = cut_frames
+    _FRAME_META[cut_meta["name"]] = {"family": "motion", **cut_meta}
+    for frames, masks, meta in all_fusion_scenes(h=144, w=192, steps=5):
+        _SEQ_CACHE[meta["name"]] = frames
+        _MASK_CACHE[meta["name"]] = masks
+        _FRAME_META[meta["name"]] = meta
 
 
 def _png_bytes(img: np.ndarray) -> bytes:
@@ -58,7 +74,14 @@ def _png_bytes(img: np.ndarray) -> bytes:
 
 def _kernel_compute(seq_name: str, t: float) -> dict:
     """调用合成内核并整理浏览器需要的全部产物（带结果缓存）。"""
-    key = (seq_name, round(float(t), 4))
+    meta = _FRAME_META.get(seq_name, {})
+    if meta.get("family") == "motion":
+        return _motion_compute(seq_name, t)
+    return _fusion_compute(seq_name, t)
+
+
+def _motion_compute(seq_name: str, t: float) -> dict:
+    key = ("motion", seq_name, round(float(t), 4))
     cached = _RESULT_CACHE.get(key)
     if cached is not None:
         return cached
@@ -86,10 +109,98 @@ def _kernel_compute(seq_name: str, t: float) -> dict:
         "reprojection": result.reprojection_table,
         "gt_t": gt_index / (len(frames) - 1),
         "scene_cut": False,
+        "family": "motion",
     }
     if len(_RESULT_CACHE) >= _RESULT_CACHE_MAX:
         _RESULT_CACHE.pop(next(iter(_RESULT_CACHE)))
     _RESULT_CACHE[key] = data
+    return data
+
+
+def _fusion_metrics(out, seq_name: str, t: float) -> dict:
+    """在与真值帧最近的时间网格上复算错误遮盖、重影、空洞。"""
+    from interp.fusion_metrics import (
+        FG_PALETTES, ghosting_area, hole_rate, occlusion_metrics,
+    )
+
+    frames = _SEQ_CACHE[seq_name]
+    masks = _MASK_CACHE[seq_name]
+    gt_index = min(range(len(frames)), key=lambda k: abs(k / (len(frames) - 1) - t))
+    gt = frames[gt_index]
+    gt_fg = masks[gt_index]
+    palette = FG_PALETTES[seq_name]
+    import numpy as np
+    bg_pixels = frames[0].reshape(-1, 3)[~masks[0].reshape(-1)]
+    bg_stats = {
+        "mean": [float(v) for v in bg_pixels.mean(axis=0)],
+        "std": float(bg_pixels.std(axis=0).mean()),
+    }
+    return {
+        "gt_t": gt_index / (len(frames) - 1),
+        "alignment_note": (
+            "t 与真值网格对齐时指标为实测；否则指标对应最近真值帧，"
+            "中间帧图像仍是当前 t。"
+        ),
+        "aligned": abs(gt_index / (len(frames) - 1) - t) < 1e-6,
+        "occlusion": occlusion_metrics(
+            out.frame, gt_fg, ~gt_fg, palette, bg_stats["mean"]
+        ),
+        "ghosting": ghosting_area(
+            out.frame, gt_fg, ~gt_fg, bg_stats, palette, gt_frame=gt
+        ),
+        "holes": hole_rate(out),
+    }
+
+
+def _fusion_compute(seq_name: str, t: float) -> dict:
+    key = ("fusion", seq_name, round(float(t), 4))
+    cached = _FUSION_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    frames = _SEQ_CACHE[seq_name]
+    img0, img1 = frames[0], frames[-1]
+    flow = _FLOW_CACHE.get(seq_name)
+    if flow is None:
+        from interp.core import estimate_bidirectional_flow
+        flow = estimate_bidirectional_flow(img0, img1, block=7, search=14)
+        _FLOW_CACHE[seq_name] = flow
+    methods = {}
+    for name in METHOD_ORDER:
+        out = run_method(name, img0, img1, t, flow=flow)
+        gt_index = min(range(len(frames)), key=lambda k: abs(k / (len(frames) - 1) - t))
+        frame_mae = float(np.mean(np.abs(
+            to_float_rgb(out.frame) - to_float_rgb(frames[gt_index])
+        )) * 255.0)
+        methods[name] = {
+            "desc": METHOD_DESCRIPTIONS[name],
+            "stats": out.stats,
+            "runtime_s": round(out.runtime_s, 3),
+            "frame_mae": round(frame_mae, 3),
+            "metrics": _fusion_metrics(out, seq_name, t),
+            "images": {k: _png_bytes(v) for k, v in fusion_layers(out).items()},
+        }
+    gt_index = min(range(len(frames)), key=lambda k: abs(k / (len(frames) - 1) - t))
+    common = {
+        "groundtruth": _png_bytes(frames[gt_index]),
+        "gtmask": _png_bytes(
+            (_MASK_CACHE[seq_name][gt_index].astype(np.uint8) * 255)[..., None].repeat(3, -1)
+        ),
+        "frame0": _png_bytes(img0),
+        "frame1": _png_bytes(img1),
+    }
+    data = {
+        "ok": True,
+        "family": "fusion",
+        "t": t,
+        "methods": methods,
+        "common": common,
+        "meta": _FRAME_META[seq_name],
+        "gt_t": gt_index / (len(frames) - 1),
+    }
+    if len(_FUSION_CACHE) >= _FUSION_CACHE_MAX:
+        _FUSION_CACHE.pop(next(iter(_FUSION_CACHE)))
+    _FUSION_CACHE[key] = data
     return data
 
 
@@ -115,8 +226,23 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/sequences":
             _load_sequences()
-            names = list(_SEQ_CACHE.keys())
-            self._send_json({"sequences": names})
+            out = []
+            for name in _SEQ_CACHE:
+                meta = _FRAME_META.get(name, {})
+                out.append({
+                    "name": name,
+                    "family": meta.get("family", "motion"),
+                    "background": meta.get("background"),
+                    "note": meta.get("note"),
+                })
+            self._send_json({
+                "sequences": [r["name"] for r in out],
+                "detail": out,
+                "methods": [
+                    {"name": m, "desc": METHOD_DESCRIPTIONS[m]}
+                    for m in METHOD_ORDER
+                ],
+            })
             return
 
         if path == "/api/compute":
@@ -143,16 +269,35 @@ class Handler(BaseHTTPRequestHandler):
                     "t": t,
                 }, 200)
                 return
-            # 图像用 multipart 之外的简单方案：先返回 JSON 元数据 + 各层 data URL 体积
-            # 为避免 base64 膨胀到 JSON 里，这里直接把 PNG 以独立端点按需取。
+            if data["family"] == "motion":
+                self._send_json({
+                    "ok": True,
+                    "family": "motion",
+                    "scene_cut": False,
+                    "t": t,
+                    "layers": list(data["images"].keys()),
+                    "stats": data["stats"],
+                    "reprojection": data["reprojection"],
+                    "gt_t": data["gt_t"],
+                })
+                return
             self._send_json({
                 "ok": True,
-                "scene_cut": False,
+                "family": "fusion",
                 "t": t,
-                "layers": list(data["images"].keys()),
-                "stats": data["stats"],
-                "reprojection": data["reprojection"],
+                "meta": data["meta"],
                 "gt_t": data["gt_t"],
+                "layers": list(data["common"].keys()),
+                "methods": {
+                    m: {
+                        "desc": v["desc"],
+                        "stats": v["stats"],
+                        "runtime_s": v["runtime_s"],
+                        "metrics": v["metrics"],
+                        "layers": list(v["images"].keys()),
+                    }
+                    for m, v in data["methods"].items()
+                },
             })
             return
 
@@ -165,6 +310,7 @@ class Handler(BaseHTTPRequestHandler):
             except (KeyError, IndexError, ValueError):
                 self._send_json({"ok": False, "error": "参数无效"}, 400)
                 return
+            method = qs.get("method", [None])[0]
             _load_sequences()
             t = min(1.0, max(0.0, t))
             try:
@@ -173,7 +319,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json({"ok": False, "scene_cut": True,
                                  "error": str(exc)}, 200)
                 return
-            img = data["images"].get(layer)
+            if data["family"] == "motion":
+                img = data["images"].get(layer)
+            else:
+                if method is None:
+                    img = data["common"].get(layer)
+                else:
+                    entry = data["methods"].get(method)
+                    img = entry["images"].get(layer) if entry else None
             if img is None:
                 self.send_error(404, "unknown layer")
                 return
