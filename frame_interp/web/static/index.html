@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>双向运动分析 · 中间帧播放器</title>
+<style>
+  :root { --bg:#0f1420; --panel:#171e2c; --line:#27314a; --fg:#e6ebf5; --muted:#93a0b8; --accent:#5aa2ff; --warn:#ff7a59; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 -apple-system,Segoe UI,Roboto,"PingFang SC","Microsoft YaHei",sans-serif; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header span { color:var(--muted); font-size:12px; }
+  .wrap { display:grid; grid-template-columns:300px 1fr; gap:16px; padding:16px 20px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .panel h2 { font-size:13px; margin:0 0 10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .row { margin-bottom:14px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+  select, input[type=range] { width:100%; }
+  select { background:#0d1320; color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:7px; }
+  .tval { font-variant-numeric:tabular-nums; color:var(--accent); font-weight:600; }
+  .btns { display:flex; gap:7px; flex-wrap:wrap; }
+  button { background:#22304d; color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:7px 11px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.active { background:var(--accent); border-color:var(--accent); color:#06101f; font-weight:600; }
+  .layers { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .stage { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .view { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .view h3 { margin:0 0 8px; font-size:13px; color:var(--muted); }
+  .view img { width:100%; image-rendering:pixelated; border-radius:6px; background:#000; }
+  .error { background:#3a1d18; border:1px solid var(--warn); color:#ffd2c7; border-radius:10px; padding:18px; }
+  .error b { color:var(--warn); }
+  table { width:100%; border-collapse:collapse; font-size:11.5px; }
+  th,td { border:1px solid var(--line); padding:4px 6px; text-align:right; font-variant-numeric:tabular-nums; }
+  th { color:var(--muted); font-weight:600; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; font-size:12.5px; }
+  .stats div { display:flex; justify-content:space-between; border-bottom:1px dotted var(--line); padding:3px 0; }
+  .stats b { font-variant-numeric:tabular-nums; }
+  .muted { color:var(--muted); font-size:11.5px; }
+  .legend span { display:inline-block; margin-right:10px; font-size:11px; color:var(--muted); }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+</style>
+</head>
+<body>
+<header>
+  <h1>双向运动分析 · 中间帧播放器</h1>
+  <span>所有结果由 interp.interpolate_frame 合成内核实时驱动 · 非透明混合</span>
+</header>
+
+<div class="wrap">
+  <div>
+    <div class="panel">
+      <h2>输入序列</h2>
+      <div class="row">
+        <label for="seq">序列（scene_cut 会触发拒绝）</label>
+        <select id="seq"></select>
+      </div>
+      <div class="row">
+        <label>插值时刻 t = <span class="tval" id="tLabel">0.500</span></label>
+        <input type="range" id="tSlider" min="0" max="1" step="0.01" value="0.5" />
+      </div>
+      <div class="row btns">
+        <button id="stepBack">◀ 0.05</button>
+        <button id="stepFrameBack">◀ 帧</button>
+        <button id="play">▶ 播放</button>
+        <button id="stepFrameFwd">帧 ▶</button>
+        <button id="stepFwd">0.05 ▶</button>
+      </div>
+      <div class="muted">帧步进按当前序列的真值时间网格（steps=5，间隔 0.25）移动。</div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <h2>分层视图</h2>
+      <div class="layers" id="layerBtns"></div>
+      <p class="muted" style="margin-bottom:0">主结果固定显示“最终帧”与“遮挡叠加”，
+      下方图层切换用于查看运动/有效性/空洞/可信图。</p>
+    </div>
+  </div>
+
+  <div>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+const LAYERS = [
+  ["frame","最终帧"],
+  ["frame_with_occlusion","遮挡叠加"],
+  ["motion_01","运动 I0→I1"],
+  ["motion_10","运动 I1→I0"],
+  ["validity","样本有效性"],
+  ["occlusion","碰撞/遮挡"],
+  ["holes","空洞分类"],
+  ["confidence","可信图"],
+];
+let currentLayer = "motion_01";
+let playing = false;
+let playTimer = null;
+
+const $ = (id) => document.getElementById(id);
+const layerUrl = (seq, t, layer) =>
+  `/api/layer?seq=${encodeURIComponent(seq)}&t=${t}&layer=${layer}`;
+
+function buildLayerButtons() {
+  const box = $("layerBtns");
+  box.innerHTML = "";
+  for (const [key, name] of LAYERS) {
+    const b = document.createElement("button");
+    b.textContent = name;
+    if (key === currentLayer) b.classList.add("active");
+    b.onclick = () => { currentLayer = key; buildLayerButtons(); refreshLayerOnly(); };
+    box.appendChild(b);
+  }
+}
+
+function fmt(n) { return Number(n).toFixed(4); }
+
+async function refresh() {
+  const seq = $("seq").value;
+  const t = parseFloat($("tSlider").value);
+  $("tLabel").textContent = t.toFixed(3);
+
+  let meta;
+  try {
+    const r = await fetch(`/api/compute?seq=${encodeURIComponent(seq)}&t=${t}`);
+    meta = await r.json();
+  } catch (e) {
+    $("result").innerHTML = `<div class="error">请求失败：${e}</div>`;
+    return;
+  }
+
+  if (!meta.ok && meta.scene_cut) {
+    // 场景切换：内核拒绝，失败原因回灌结果区，不显示扭曲过渡帧
+    $("result").innerHTML = `
+      <div class="error">
+        <h3 style="margin:0 0 8px">⛔ 内核拒绝插值（场景切换）</h3>
+        <p style="margin:0 0 10px"><b>原因：</b>${meta.error}</p>
+        <p class="muted" style="margin:0">两帧属于无关镜头，前向扭曲会生成无意义的
+        形变过渡，因此 interpolate_frame 抛出 SceneCutError，不产出中间帧。
+        请切换到其它序列查看正常插值。</p>
+      </div>`;
+    return;
+  }
+  if (!meta.ok) {
+    $("result").innerHTML = `<div class="error">错误：${meta.error || "未知错误"}</div>`;
+    return;
+  }
+
+  const s = meta.stats;
+  const rep = meta.reprojection;
+  const repRows = rep.hit_samples.slice(0, 10).map(r => `
+    <tr><td>${r.source_side}</td><td>${r.source_x},${r.source_y}</td>
+    <td>${r.flow_dx},${r.flow_dy}</td><td>${r.time_scale}</td>
+    <td>${r.predicted_target_x},${r.predicted_target_y}</td>
+    <td>${r.rounding_error}</td></tr>`).join("");
+
+  $("result").innerHTML = `
+    <div class="stage">
+      <div class="view">
+        <h3>中间帧（内核合成，t=${t.toFixed(3)}）</h3>
+        <img src="${layerUrl(seq, t, "frame")}" alt="interpolated frame" />
+      </div>
+      <div class="view">
+        <h3>遮挡 / 补全区域叠加</h3>
+        <img src="${layerUrl(seq, t, "frame_with_occlusion")}" alt="occlusion overlay" />
+        <div class="legend" style="margin-top:8px">
+          <span><i class="dot" style="background:#8c40bf"></i>前景覆盖/碰撞</span>
+          <span><i class="dot" style="background:#f2cc1a"></i>可回采</span>
+          <span><i class="dot" style="background:#e61a1a"></i>有限补全(不确定)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" style="margin-top:16px">
+      <h3 id="layerTitle">分层：${LAYERS.find(l=>l[0]===currentLayer)[1]}</h3>
+      <img id="layerImg" src="${layerUrl(seq, t, currentLayer)}" style="max-width:420px" />
+    </div>
+
+    <div class="view" style="margin-top:16px">
+      <h3>内核统计</h3>
+      <div class="stats">
+        <div>命中比例 <b>${fmt(s.hit_ratio)}</b></div>
+        <div>碰撞比例 <b>${fmt(s.collision_ratio)}</b></div>
+        <div>覆盖比例 <b>${fmt(s.covered_ratio)}</b></div>
+        <div>空洞比例 <b>${fmt(s.hole_ratio)}</b></div>
+        <div>可回采 <b>${fmt(s.recoverable_ratio)}</b></div>
+        <div>有限补全 <b>${fmt(s.unrecoverable_ratio)}</b></div>
+        <div>补全迭代 <b>${s.inpaint_iters}</b></div>
+        <div>平均可信度 <b>${fmt(s.mean_confidence)}</b></div>
+        <div>双向一致率 <b>${fmt(s.consistency_ratio)}</b></div>
+        <div>最近真值 t <b>${meta.gt_t.toFixed(2)}</b></div>
+      </div>
+    </div>
+
+    <div class="view" style="margin-top:16px">
+      <h3>重投影审计（predicted = source + flow × time_scale）</h3>
+      <table>
+        <thead><tr><th>侧</th><th>源(x,y)</th><th>流(dx,dy)</th><th>时间比例</th>
+        <th>预测目标(x,y)</th><th>取整误差</th></tr></thead>
+        <tbody>${repRows}</tbody>
+      </table>
+      <p class="muted" style="margin:8px 0 0">${rep.note}</p>
+    </div>`;
+}
+
+function refreshLayerOnly() {
+  const seq = $("seq").value, t = parseFloat($("tSlider").value);
+  const img = $("layerImg");
+  const title = $("layerTitle");
+  if (img) img.src = layerUrl(seq, t, currentLayer);
+  if (title) title.textContent = "分层：" + LAYERS.find(l=>l[0]===currentLayer)[1];
+}
+
+function setT(v) {
+  $("tSlider").value = Math.min(1, Math.max(0, v)).toFixed(2);
+  refresh();
+}
+
+async function init() {
+  buildLayerButtons();
+  const r = await fetch("/api/sequences");
+  const data = await r.json();
+  const sel = $("seq");
+  for (const name of data.sequences) {
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name;
+    sel.appendChild(o);
+  }
+  sel.onchange = refresh;
+  $("tSlider").oninput = refresh;
+  $("stepBack").onclick = () => setT(parseFloat($("tSlider").value) - 0.05);
+  $("stepFwd").onclick = () => setT(parseFloat($("tSlider").value) + 0.05);
+  $("stepFrameBack").onclick = () => setT(Math.round((parseFloat($("tSlider").value) - 0.25) * 4) / 4);
+  $("stepFrameFwd").onclick = () => setT(Math.round((parseFloat($("tSlider").value) + 0.25) * 4) / 4);
+  $("play").onclick = togglePlay;
+  refresh();
+}
+
+function togglePlay() {
+  playing = !playing;
+  $("play").textContent = playing ? "⏸ 暂停" : "▶ 播放";
+  if (playing) {
+    playTimer = setInterval(() => {
+      let t = parseFloat($("tSlider").value) + 0.02;
+      if (t >= 1) t = 0;
+      $("tSlider").value = t.toFixed(2);
+      refresh();
+    }, 120);
+  } else {
+    clearInterval(playTimer);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
